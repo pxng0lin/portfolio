@@ -1,0 +1,12 @@
+{
+    "server": {
+        "baseDir": [
+            "./src",
+            "./source",
+            "./out"
+        ],
+        "routes": {
+            "/vendor": "./node_modules"
+        }
+    }
+}
