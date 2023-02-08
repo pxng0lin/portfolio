@@ -2,18 +2,19 @@ App = {
   loading: false,
   contracts: {},
 
+
   load: async () => {
     await App.loadWeb3()
     await App.loadAccount()
     await App.loadContract()
-    //await App.render()
+    await App.render()
+    //console.log("app loading...")
   },
-
   // https://medium.com/metamask/https-medium-com-metamask-breaking-change-injecting-web3-7722797916a8
   loadWeb3: async () => {
     if (typeof web3 !== 'undefined') {
       App.web3Provider = web3.currentProvider
-      web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+      web3 = new Web3(web3.currentProvider)
     } else {
       window.alert("Please connect to Metamask.")
     }
@@ -32,7 +33,7 @@ App = {
     // Legacy dapp browsers...
     else if (window.web3) {
       App.web3Provider = web3.currentProvider
-      web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+      window.web3 = new Web3(web3.currentProvider)
       // Acccounts always exposed
       web3.eth.sendTransaction({/* ... */ })
     }
@@ -43,14 +44,85 @@ App = {
   },
 
   loadAccount: async () => {
-    // Set the current blockchain account
-    App.account = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-    console.log(App.account)
+    App.account = web3.eth.accounts[0]
+    // console.log(App.account)
   },
 
   loadContract: async () => {
-    const toDoList = await $.getJSON("ToDoList.json")
-    console.log(toDoList)
+    const todoList = await $.getJSON("ToDoList.json")
+    // console.log(todoList)
+    App.contracts.ToDoList = TruffleContract(todoList)
+    App.contracts.ToDoList.setProvider(App.web3Provider)
+
+    App.todoList = await App.contracts.ToDoList.deployed()
+
+  },
+
+  render: async () => {
+    // Prevent double render
+    if (App.loading) {
+      return
+    }
+    // Update app loading state
+    App.setLoading(true)
+
+    // Render account
+    $('#account').html(App.account)
+
+    // Render tasks
+    await App.renderTasks()
+
+    App.setLoading(false)
+  },
+
+  renderTasks: async () => {
+    //taskTemplate, checkbox and content
+    // Load the total task count from the blockchain
+    const taskCount = await App.todoList.taskCount()
+    const $taskTemplate = $('.taskTemplate')
+
+    // Render out each task with a new task template
+    // we do this using the taskCount, this is accomplished using a for loop
+    for (var i = 1; i <= taskCount; i++) {
+      const task = await App.todoList.tasks(i) // this returns an array so we use 0 indexing to pull each attribute from tasks
+      const taskId = task[0].toNumber()
+      const taskContent = task[1]
+      const taskCompleted = task[2]
+
+      // create the HTML for the tasks, taken from the DOM
+      const $newTaskTemplate = $taskTemplate.clone() // cloned
+      $newTaskTemplate.find('.content').html(taskContent)
+      $newTaskTemplate.find('input')
+        .prop('name', taskId)
+        .prop('checked', taskCompleted)
+      // .prop('click', App.toggleCompleted)
+
+      // put the task in the correct list
+      if (taskCompleted) {
+        $('completedTaskList').append($newTaskTemplate)
+      } else {
+        $('#taskList').append($newTaskTemplate)
+      }
+
+
+
+      // Show task
+      $newTaskTemplate.show()
+    }
+  },
+
+  // setLoading function
+  setLoading: (boolean) => {
+    App.loading = boolean
+    const loader = $('#loader') // this is found in the html file, showing on the site as Loading...
+    const content = $('#content') // this is found in the html file, this is the todo list that shows on the page
+    if (boolean) {
+      loader.show()
+      content.hide()
+    } else {
+      loader.hide()
+      content.show()
+    }
   }
 }
 
@@ -58,4 +130,4 @@ $(() => {
   $(window).load(() => {
     App.load()
   })
-});
+})
