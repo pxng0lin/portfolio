@@ -45,7 +45,7 @@ App = {
 
   loadAccount: async () => {
     App.account = web3.eth.accounts[0]
-    // console.log(App.account)
+    console.log(App.account)
   },
 
   loadContract: async () => {
@@ -109,6 +109,16 @@ App = {
       // Show task
       $newTaskTemplate.show()
     }
+  },
+
+
+  createTask: async () => {
+    App.setLoading(true)
+    const content = $('#newTask').val() // this is the name of the input on the form, id="newTask"
+    // Call the smart contract function
+    await App.todoList.createTask(content)
+    // refresh the page, fethcing all the tasks from the blockchain, rather than listening for the event from the page
+    window.location.reload()
   },
 
   // setLoading function
