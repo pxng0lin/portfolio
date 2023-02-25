@@ -95,11 +95,11 @@ App = {
       $newTaskTemplate.find('input')
         .prop('name', taskId)
         .prop('checked', taskCompleted)
-      // .prop('click', App.toggleCompleted)
+        .on('click', App.toggleCompleted)
 
       // put the task in the correct list
       if (taskCompleted) {
-        $('completedTaskList').append($newTaskTemplate)
+        $('#completedTaskList').append($newTaskTemplate)
       } else {
         $('#taskList').append($newTaskTemplate)
       }
@@ -121,6 +121,13 @@ App = {
     window.location.reload()
   },
 
+  toggleCompleted: async (e) => {
+    App.setLoading(true)
+    const taskId = e.target.name // is an onclick event
+    await App.todoList.toggleCompleted(taskId) // calling the smart contract now and supplying the taskId
+    window.location.reload() // just reloads the webpage
+  },
+
   // setLoading function
   setLoading: (boolean) => {
     App.loading = boolean
@@ -133,7 +140,8 @@ App = {
       loader.hide()
       content.show()
     }
-  }
+  },
+
 }
 
 $(() => {
